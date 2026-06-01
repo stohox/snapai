@@ -1,6 +1,6 @@
 {
   "name": "snapai",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "SnapAI - 智能截图工具",
   "main": "./out/main/index.js",
   "license": "MIT",
