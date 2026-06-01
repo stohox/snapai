@@ -62,7 +62,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
-          files: *.exe
+          files: "*.exe"
           generate_release_notes: true
 
   deploy:
