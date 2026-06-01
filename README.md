@@ -37,7 +37,8 @@ npm run build:win
 
 ## 下载
 
-从 [GitHub Releases](https://github.com/stohox/snapai/releases) 下载最新版本。
+- **在线下载**：https://stohox.github.io/snapai/
+- **Releases 页面**：https://github.com/stohox/snapai/releases
 
 ## 技术栈
 
