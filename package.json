@@ -15,7 +15,6 @@
     "appId": "com.snapai.app",
     "productName": "SnapAI",
     "directories": {
-      "buildResources": "resources",
       "output": "release"
     },
     "files": [
@@ -29,22 +28,15 @@
           "arch": ["x64"]
         }
       ],
-      "artifactName": "${productName}-${version}-portable.${ext}"
+      "artifactName": "${productName}-${version}-portable.${ext}",
+      "sign": false
     },
     "portable": {
       "artifactName": "${productName}-${version}-portable.${ext}"
-    },
-    "extraResources": [
-      {
-        "from": "resources/",
-        "to": "resources/",
-        "filter": ["**/*"]
-      }
-    ]
+    }
   },
   "dependencies": {
     "@electron-toolkit/utils": "^4.0.0",
-    "electron-store": "^10.0.0",
     "openai": "^6.39.1",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
