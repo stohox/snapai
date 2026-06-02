@@ -3,46 +3,51 @@ import { join } from 'path'
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs'
 
 class JsonStore {
-  private filePath: string
+  private filePath: string | null = null
   private data: Record<string, unknown>
+  private defaults: Record<string, unknown>
 
   constructor(options?: { defaults?: Record<string, unknown> }) {
-    const userDataPath = app.getPath('userData')
-    this.filePath = join(userDataPath, 'config.json')
-    this.data = {}
+    this.defaults = options?.defaults ?? {}
+    this.data = { ...this.defaults }
+  }
 
-    if (options?.defaults) {
-      this.data = { ...options.defaults }
+  private getFilePath(): string {
+    if (!this.filePath) {
+      this.filePath = join(app.getPath('userData'), 'config.json')
+      this.load()
     }
-
-    this.load()
+    return this.filePath
   }
 
   private load(): void {
     try {
-      if (existsSync(this.filePath)) {
-        const content = readFileSync(this.filePath, 'utf-8')
+      const fp = this.filePath!
+      if (existsSync(fp)) {
+        const content = readFileSync(fp, 'utf-8')
         const parsed = JSON.parse(content)
-        this.data = { ...this.data, ...parsed }
+        this.data = { ...this.defaults, ...parsed }
       }
     } catch {
-      this.data = this.data
+      // keep defaults
     }
   }
 
   private save(): void {
     try {
-      const dir = join(this.filePath, '..')
+      const fp = this.getFilePath()
+      const dir = join(fp, '..')
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true })
       }
-      writeFileSync(this.filePath, JSON.stringify(this.data, null, 2), 'utf-8')
+      writeFileSync(fp, JSON.stringify(this.data, null, 2), 'utf-8')
     } catch (error) {
       console.error('Failed to save store:', error)
     }
   }
 
   get(key: string): unknown {
+    this.getFilePath()
     return this.data[key]
   }
 

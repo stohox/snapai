@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import CaptureOverlay from './capture/CaptureOverlay'
 import ResultWindow from './result/ResultWindow'
 import SettingsPanel from './settings/SettingsPanel'
+import PinWindow from './pin/PinWindow'
 
-type Route = 'capture' | 'result' | 'settings' | 'about' | 'onboarding'
+type Route = 'capture' | 'result' | 'settings' | 'about' | 'onboarding' | 'pin'
 
 function getRoute(): Route {
   const hash = window.location.hash.replace('#/', '')
@@ -26,6 +27,8 @@ function App(): JSX.Element {
       return <CaptureOverlay />
     case 'result':
       return <ResultWindow />
+    case 'pin':
+      return <PinWindow />
     case 'settings':
       return <SettingsPanel />
     case 'onboarding':

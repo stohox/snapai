@@ -38,8 +38,17 @@ function classifyError(error: unknown): Error {
 }
 
 function parseTranslateResult(content: string): TranslateResult {
+  let cleaned = content.trim()
+
+  cleaned = cleaned.replace(/<think>[\s\S]*?<\/think>/gi, '')
+  cleaned = cleaned.replace(/<reasoning>[\s\S]*?<\/reasoning>/gi, '')
+  cleaned = cleaned.replace(/<thinking>[\s\S]*?<\/thinking>/gi, '')
+  cleaned = cleaned.replace(/```json\s*/gi, '')
+  cleaned = cleaned.replace(/```\s*/g, '')
+  cleaned = cleaned.trim()
+
   try {
-    const jsonMatch = content.match(/\{[\s\S]*\}/)
+    const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]) as TranslateResult
       return {
@@ -53,7 +62,7 @@ function parseTranslateResult(content: string): TranslateResult {
 
   return {
     original: '',
-    translated: `[返回内容格式异常] ${content}`
+    translated: `[返回内容格式异常] ${content.substring(0, 200)}`
   }
 }
 

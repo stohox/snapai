@@ -1,4 +1,4 @@
-import { ipcMain, clipboard, dialog, BrowserWindow } from 'electron'
+import { ipcMain, clipboard, dialog, BrowserWindow, screen } from 'electron'
 import JsonStore from './store'
 import { IPC_CHANNELS } from '../shared/types'
 import type { SelectionArea, AIAnalyzeParams, AITranslateParams } from '../shared/types'
@@ -21,6 +21,7 @@ const store = new JsonStore({
 })
 
 let lastCaptureResult: { selection: SelectionArea; imageBase64: string } | null = null
+let pendingPinImage: string | null = null
 
 export function registerIpcHandlers(windowManager: WindowManager): void {
   ipcMain.handle(
@@ -76,13 +77,53 @@ export function registerIpcHandlers(windowManager: WindowManager): void {
     store.set(key, value)
   })
 
+  ipcMain.handle(IPC_CHANNELS.CAPTURE_PIN_IMAGE, async (_event, imageBase64: string) => {
+    pendingPinImage = imageBase64
+    windowManager.createPinWindow(imageBase64)
+    windowManager.closeCaptureWindow()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PIN_GET_IMAGE, async () => {
+    const data = pendingPinImage
+    pendingPinImage = null
+    return data
+  })
+
+  ipcMain.handle(IPC_CHANNELS.PIN_RESIZE, async (event, width: number, height: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) {
+      const display = screen.getDisplayMatching(win.getBounds())
+      const workArea = display.workArea
+      const targetW = Math.min(Math.ceil(width), workArea.width)
+      const targetH = Math.min(Math.ceil(height), workArea.height)
+      const x = Math.round(workArea.x + (workArea.width - targetW) / 2)
+      const y = Math.round(workArea.y + (workArea.height - targetH) / 2)
+      win.setBounds({ x, y, width: targetW, height: targetH })
+    }
+  })
+
+  ipcMain.on(IPC_CHANNELS.PIN_MOVE, (event, deltaX: number, deltaY: number) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    if (win && !win.isDestroyed()) {
+      const [x, y] = win.getPosition()
+      win.setPosition(x + Math.round(deltaX), y + Math.round(deltaY))
+    }
+  })
+
   ipcMain.handle(IPC_CHANNELS.AI_ANALYZE, async (event, params: AIAnalyzeParams) => {
-    const senderWindow = BrowserWindow.fromWebContents(event.sender)
     const selection = lastCaptureResult?.selection
 
     windowManager.closeCaptureWindow()
     const resultWindow = windowManager.createResultWindow(selection)
-    resultWindow.webContents.send(IPC_CHANNELS.AI_LOADING, true)
+
+    const sendLoading = (): void => {
+      resultWindow.webContents.send(IPC_CHANNELS.AI_LOADING, true)
+    }
+    if (resultWindow.webContents.isLoading()) {
+      resultWindow.webContents.once('did-finish-load', sendLoading)
+    } else {
+      sendLoading()
+    }
 
     try {
       const result = await analyzeImage(params.imageBase64, params.config)
@@ -102,12 +143,19 @@ export function registerIpcHandlers(windowManager: WindowManager): void {
   })
 
   ipcMain.handle(IPC_CHANNELS.AI_TRANSLATE, async (event, params: AITranslateParams) => {
-    const senderWindow = BrowserWindow.fromWebContents(event.sender)
     const selection = lastCaptureResult?.selection
 
     windowManager.closeCaptureWindow()
     const resultWindow = windowManager.createResultWindow(selection)
-    resultWindow.webContents.send(IPC_CHANNELS.AI_LOADING, true)
+
+    const sendLoading = (): void => {
+      resultWindow.webContents.send(IPC_CHANNELS.AI_LOADING, true)
+    }
+    if (resultWindow.webContents.isLoading()) {
+      resultWindow.webContents.once('did-finish-load', sendLoading)
+    } else {
+      sendLoading()
+    }
 
     try {
       const result = await translateImage(

@@ -1,6 +1,11 @@
 node_modules/
 out/
 dist/
+dist-final/
+dist-build/
+dist-release/
+ebuilder-cache/
+rcedit-x64.exe
 release/
 release2/
 .env
@@ -10,4 +15,5 @@ release2/
 Thumbs.db
 *.map
 .trae/
+openspec/
 docs/superpowers/

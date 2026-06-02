@@ -1,12 +1,25 @@
-import { BrowserWindow, screen } from 'electron'
+import { BrowserWindow, screen, nativeImage } from 'electron'
 import { join } from 'path'
 import type { SelectionArea } from '../shared/types'
+
+function getAppIcon(): Electron.NativeImage {
+  try {
+    const iconPath = require('electron').app.isPackaged
+      ? join(process.resourcesPath, 'icon.ico')
+      : join(__dirname, '../../build/icon.ico')
+    const icon = nativeImage.createFromPath(iconPath)
+    return icon.isEmpty() ? nativeImage.createEmpty() : icon
+  } catch {
+    return nativeImage.createEmpty()
+  }
+}
 
 export class WindowManager {
   private captureWindow: BrowserWindow | null = null
   private resultWindow: BrowserWindow | null = null
   private settingsWindow: BrowserWindow | null = null
   private aboutWindow: BrowserWindow | null = null
+  private pinWindows: Set<BrowserWindow> = new Set()
 
   private getPreloadPath(): string {
     return join(__dirname, '../preload/index.js')
@@ -63,6 +76,7 @@ export class WindowManager {
       skipTaskbar: true,
       resizable: false,
       hasShadow: false,
+      icon: getAppIcon(),
       webPreferences: {
         preload: this.getPreloadPath(),
         sandbox: false
@@ -95,6 +109,7 @@ export class WindowManager {
       alwaysOnTop: true,
       skipTaskbar: true,
       resizable: true,
+      icon: getAppIcon(),
       webPreferences: {
         preload: this.getPreloadPath(),
         sandbox: false
@@ -163,6 +178,7 @@ export class WindowManager {
       alwaysOnTop: false,
       resizable: false,
       title: 'SnapAI 设置',
+      icon: getAppIcon(),
       webPreferences: {
         preload: this.getPreloadPath(),
         sandbox: false
@@ -192,6 +208,7 @@ export class WindowManager {
       transparent: true,
       alwaysOnTop: true,
       resizable: false,
+      icon: getAppIcon(),
       webPreferences: {
         preload: this.getPreloadPath(),
         sandbox: false
@@ -237,5 +254,45 @@ export class WindowManager {
 
   getResultWindow(): BrowserWindow | null {
     return this.resultWindow
+  }
+
+  createPinWindow(imageBase64: string): BrowserWindow {
+    const display = screen.getPrimaryDisplay()
+    const workArea = display.workArea
+    const initW = Math.min(640, Math.floor(workArea.width * 0.5))
+    const initH = Math.min(400, Math.floor(workArea.height * 0.5))
+    const initX = Math.round(workArea.x + (workArea.width - initW) / 2)
+    const initY = Math.round(workArea.y + (workArea.height - initH) / 2)
+
+    const pinWindow = new BrowserWindow({
+      width: initW,
+      height: initH,
+      x: initX,
+      y: initY,
+      frame: false,
+      transparent: true,
+      alwaysOnTop: true,
+      skipTaskbar: true,
+      resizable: true,
+      hasShadow: false,
+      icon: getAppIcon(),
+      webPreferences: {
+        preload: this.getPreloadPath(),
+        sandbox: false
+      }
+    })
+
+    this.loadWindowContent(pinWindow, `pin`)
+
+    pinWindow.webContents.once('did-finish-load', () => {
+      pinWindow.webContents.send('pin:image-data', imageBase64)
+    })
+
+    this.pinWindows.add(pinWindow)
+    pinWindow.on('closed', () => {
+      this.pinWindows.delete(pinWindow)
+    })
+
+    return pinWindow
   }
 }

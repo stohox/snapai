@@ -5,7 +5,16 @@ import type { WindowManager } from './window-manager'
 export function createTray(windowManager: WindowManager): Tray {
   let icon: Electron.NativeImage
   try {
-    icon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.png'))
+    const iconPath = app.isPackaged
+      ? join(process.resourcesPath, 'icon.ico')
+      : join(__dirname, '../../build/icon.ico')
+    icon = nativeImage.createFromPath(iconPath)
+    if (icon.isEmpty()) {
+      const pngPath = app.isPackaged
+        ? join(process.resourcesPath, 'icon-32.png')
+        : join(__dirname, '../../build/icon-32.png')
+      icon = nativeImage.createFromPath(pngPath)
+    }
     if (icon.isEmpty()) {
       icon = nativeImage.createEmpty()
     }

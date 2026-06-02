@@ -1,6 +1,6 @@
 {
   "name": "snapai",
-  "version": "1.0.4",
+  "version": "1.0.0",
   "description": "SnapAI - 智能截图工具",
   "main": "./out/main/index.js",
   "license": "MIT",
@@ -15,17 +15,30 @@
     "appId": "com.snapai.app",
     "productName": "SnapAI",
     "directories": {
-      "output": "release"
+      "output": "dist-final"
     },
     "files": [
       "out/**/*",
       "!node_modules/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "build/icon.ico",
+        "to": "icon.ico"
+      },
+      {
+        "from": "build/icon-32.png",
+        "to": "icon-32.png"
+      }
+    ],
     "win": {
+      "icon": "build/icon.ico",
       "target": [
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "artifactName": "${productName}-${version}-portable.${ext}",

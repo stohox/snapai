@@ -20,14 +20,14 @@ async function captureWithDesktopCapturer(): Promise<ScreenshotResult> {
   const totalHeight = maxY - minY
 
   const maxScaleFactor = Math.max(...displays.map((d) => d.scaleFactor))
-  const thumbnailWidth = Math.ceil(totalWidth * maxScaleFactor)
-  const thumbnailHeight = Math.ceil(totalHeight * maxScaleFactor)
+  const physicalWidth = Math.ceil(totalWidth * maxScaleFactor)
+  const physicalHeight = Math.ceil(totalHeight * maxScaleFactor)
 
   const sources = await desktopCapturer.getSources({
     types: ['screen'],
     thumbnailSize: {
-      width: Math.min(thumbnailWidth, 5120),
-      height: Math.min(thumbnailHeight, 2880)
+      width: physicalWidth,
+      height: physicalHeight
     }
   })
 
@@ -44,12 +44,15 @@ async function captureWithDesktopCapturer(): Promise<ScreenshotResult> {
     if (source) {
       const thumbnail = source.thumbnail
       if (!thumbnail.isEmpty()) {
+        const sf = display.scaleFactor
+        const thumbSize = thumbnail.getSize()
         displayScreenshots.push({
           imageDataUrl: thumbnail.toDataURL(),
           x: display.bounds.x - minX,
           y: display.bounds.y - minY,
-          width: display.bounds.width,
-          height: display.bounds.height
+          width: thumbSize.width / sf,
+          height: thumbSize.height / sf,
+          scaleFactor: sf
         })
       }
     }
@@ -71,17 +74,20 @@ function captureFromClipboard(): ScreenshotResult {
     throw new Error('无法捕获屏幕，请检查权限设置')
   }
   const size = image.getSize()
+  const primaryDisplay = screen.getPrimaryDisplay()
+  const sf = primaryDisplay.scaleFactor
   return {
     displays: [
       {
         imageDataUrl: image.toDataURL(),
         x: 0,
         y: 0,
-        width: size.width,
-        height: size.height
+        width: size.width / sf,
+        height: size.height / sf,
+        scaleFactor: sf
       }
     ],
-    totalBounds: { x: 0, y: 0, width: size.width, height: size.height }
+    totalBounds: { x: 0, y: 0, width: size.width / sf, height: size.height / sf }
   }
 }
 

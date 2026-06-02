@@ -24,6 +24,13 @@ export const AI_ANALYZE_PROMPT = `你是一个专业的图像分析助手。请�
 
 请用中文回答，格式清晰。`
 
-export const AI_TRANSLATE_PROMPT = `请识别图片中的所有{sourceLang}文字，并将它们翻译为{targetLang}。请按以下 JSON 格式返回结果：{"original": "识别到的原文", "translated": "翻译后的译文"}。如果图片中没有可识别的文字，请返回：{"original": "", "translated": "未检测到文字内容"}。只返回JSON，不要添加任何其他内容。`
+export const AI_TRANSLATE_PROMPT = `你是 OCR 翻译助手。请识别图片中所有的{sourceLang}文字并翻译为{targetLang}。
 
-export const AI_TIMEOUT = 10000
+重要规则：
+1. 必须严格按 JSON 格式返回，不要包含任何 markdown 代码块、思考过程或额外说明
+2. 格式：{"original": "识别到的原文内容", "translated": "对应的{targetLang}翻译"}
+3. 如果图片中没有可识别的文字，返回：{"original": "", "translated": "未检测到文字内容"}
+4. 禁止使用 <think>、<reasoning> 等任何思考标签
+5. 直接输出 JSON，不要换行包装`
+
+export const AI_TIMEOUT = 60000

@@ -11,6 +11,8 @@ const electronAPI = {
       ipcRenderer.invoke(IPC_CHANNELS.CAPTURE_COPY_IMAGE, imageBase64),
     saveImage: (imageBase64: string): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.CAPTURE_SAVE_IMAGE, imageBase64),
+    pinImage: (imageBase64: string): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.CAPTURE_PIN_IMAGE, imageBase64),
     onScreenshot: (callback: (data: ScreenshotResult) => void): (() => void) => {
       const handler = (_event: Electron.IpcRendererEvent, data: ScreenshotResult): void => {
         callback(data)
@@ -24,6 +26,22 @@ const electronAPI = {
     get: (key: string): Promise<unknown> => ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_GET, key),
     set: (key: string, value: unknown): Promise<void> =>
       ipcRenderer.invoke(IPC_CHANNELS.SETTINGS_SET, key, value)
+  },
+  pin: {
+    onImageData: (callback: (data: string) => void): (() => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, data: string): void => {
+        callback(data)
+      }
+      ipcRenderer.on('pin:image-data', handler)
+      return () => ipcRenderer.removeListener('pin:image-data', handler)
+    },
+    getImage: (): Promise<string> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PIN_GET_IMAGE),
+    resize: (width: number, height: number): Promise<void> =>
+      ipcRenderer.invoke(IPC_CHANNELS.PIN_RESIZE, width, height),
+    move: (deltaX: number, deltaY: number): void => {
+      ipcRenderer.send(IPC_CHANNELS.PIN_MOVE, deltaX, deltaY)
+    }
   },
   ai: {
     analyze: (params: {

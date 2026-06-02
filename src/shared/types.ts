@@ -3,6 +3,10 @@ export const IPC_CHANNELS = {
   CAPTURE_CANCEL: 'capture:cancel',
   CAPTURE_COPY_IMAGE: 'capture:copy-image',
   CAPTURE_SAVE_IMAGE: 'capture:save-image',
+  CAPTURE_PIN_IMAGE: 'capture:pin-image',
+  PIN_GET_IMAGE: 'pin:get-image',
+  PIN_RESIZE: 'pin:resize',
+  PIN_MOVE: 'pin:move',
   CAPTURE_SCREENSHOT: 'capture:screenshot',
   SETTINGS_OPEN: 'settings:open',
   SETTINGS_GET: 'settings:get',
@@ -86,6 +90,7 @@ export interface DisplayScreenshot {
   y: number
   width: number
   height: number
+  scaleFactor?: number
 }
 
 export interface ScreenshotResult {
@@ -93,18 +98,105 @@ export interface ScreenshotResult {
   totalBounds: { x: number; y: number; width: number; height: number }
 }
 
+export type EditorTool = 'select' | 'rect' | 'ellipse' | 'arrow' | 'pen' | 'number' | 'text' | 'mosaic'
+
+export interface Point {
+  x: number
+  y: number
+}
+
+export interface RectAnnotation {
+  type: 'rect'
+  x: number
+  y: number
+  width: number
+  height: number
+  color: string
+  strokeWidth: number
+}
+
+export interface EllipseAnnotation {
+  type: 'ellipse'
+  cx: number
+  cy: number
+  rx: number
+  ry: number
+  color: string
+  strokeWidth: number
+}
+
+export interface ArrowAnnotation {
+  type: 'arrow'
+  x1: number
+  y1: number
+  x2: number
+  y2: number
+  color: string
+  strokeWidth: number
+}
+
+export interface PenAnnotation {
+  type: 'pen'
+  points: Point[]
+  color: string
+  strokeWidth: number
+}
+
+export interface NumberAnnotation {
+  type: 'number'
+  x: number
+  y: number
+  number: number
+  color: string
+  fontSize: number
+}
+
+export interface TextAnnotation {
+  type: 'text'
+  x: number
+  y: number
+  content: string
+  color: string
+  fontSize: number
+}
+
+export interface MosaicAnnotation {
+  type: 'mosaic'
+  x: number
+  y: number
+  width: number
+  height: number
+  blockSize: number
+}
+
+export type Annotation =
+  | RectAnnotation
+  | EllipseAnnotation
+  | ArrowAnnotation
+  | PenAnnotation
+  | NumberAnnotation
+  | TextAnnotation
+  | MosaicAnnotation
+
 export interface ElectronAPI {
   capture: {
     confirm: (selection: SelectionArea, imageBase64: string) => Promise<void>
     cancel: () => Promise<void>
     copyImage: (imageBase64: string) => Promise<void>
     saveImage: (imageBase64: string) => Promise<void>
+    pinImage: (imageBase64: string) => Promise<void>
     onScreenshot: (callback: (data: ScreenshotResult) => void) => () => void
   }
   settings: {
     open: () => Promise<void>
     get: (key: string) => Promise<unknown>
     set: (key: string, value: unknown) => Promise<void>
+  }
+  pin: {
+    onImageData: (callback: (data: string) => void) => () => void
+    getImage: () => Promise<string>
+    resize: (width: number, height: number) => Promise<void>
+    move: (deltaX: number, deltaY: number) => void
   }
   ai: {
     analyze: (params: AIAnalyzeParams) => Promise<void>

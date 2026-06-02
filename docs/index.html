@@ -3,154 +3,1065 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SnapAI - 智能截图工具</title>
+  <meta name="description" content="SnapAI 是一款基于 AI 的智能截图工具，支持快捷截图、图形标注、AI 识图、多语言 OCR 翻译。">
+  <meta name="theme-color" content="#0a0a0f">
+  <title>SnapAI — 让截图更聪明</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cdefs%3E%3ClinearGradient id='bg' x1='0.2' y1='0' x2='0.8' y2='1'%3E%3Cstop offset='0' stop-color='%23a5b4fc'/%3E%3Cstop offset='0.4' stop-color='%23818cf8'/%3E%3Cstop offset='1' stop-color='%234338ca'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='256' height='256' rx='56' fill='url(%23bg)'/%3E%3Cg fill='none' stroke='white' stroke-width='10' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M64 108L64 64L108 64'/%3E%3Cpath d='M148 64L192 64L192 108'/%3E%3Cpath d='M192 148L192 192L148 192'/%3E%3Cpath d='M108 192L64 192L64 148'/%3E%3C/g%3E%3Cpath d='M216 22L219 33L230 36L219 39L216 50L213 39L202 36L213 33Z' fill='%23fbbf24'/%3E%3C/svg%3E">
   <style>
+    :root {
+      --background: oklch(0.145 0.013 280);
+      --background-subtle: oklch(0.18 0.015 280);
+      --background-muted: oklch(0.22 0.018 280);
+      --foreground: oklch(0.985 0 0);
+      --foreground-muted: oklch(0.708 0 0);
+      --foreground-subtle: oklch(0.556 0 0);
+      --border: oklch(1 0 0 / 8%);
+      --border-strong: oklch(1 0 0 / 14%);
+      --primary: oklch(0.65 0.22 280);
+      --primary-foreground: oklch(0.985 0 0);
+      --accent: oklch(0.75 0.18 200);
+      --muted: oklch(0.27 0.02 280);
+      --ring: oklch(0.65 0.22 280);
+      --gradient-hero: linear-gradient(135deg, oklch(0.65 0.22 280) 0%, oklch(0.6 0.24 320) 50%, oklch(0.7 0.2 200) 100%);
+      --gradient-text: linear-gradient(135deg, oklch(0.75 0.18 240) 0%, oklch(0.7 0.2 290) 50%, oklch(0.78 0.15 180) 100%);
+      --gradient-card: linear-gradient(135deg, oklch(1 0 0 / 4%) 0%, oklch(1 0 0 / 2%) 100%);
+      --radius: 0.75rem;
+      --radius-lg: 1rem;
+      --shadow-glow: 0 0 40px -8px oklch(0.65 0.22 280 / 35%);
+      --shadow-card: 0 1px 2px oklch(0 0 0 / 20%), 0 8px 24px -8px oklch(0 0 0 / 30%);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { border-color: var(--border); }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      background: var(--background);
+      color: var(--foreground);
+      line-height: 1.6;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
+
+    ::selection { background: var(--primary); color: var(--primary-foreground); }
+
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background-image:
+        linear-gradient(to right, oklch(1 0 0 / 3%) 1px, transparent 1px),
+        linear-gradient(to bottom, oklch(1 0 0 / 3%) 1px, transparent 1px);
+      background-size: 64px 64px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 20%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.35;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .glow-1 { top: -200px; left: -100px; background: oklch(0.6 0.24 280); }
+    .glow-2 { top: 200px; right: -200px; background: oklch(0.65 0.2 200); opacity: 0.25; }
+    .glow-3 { bottom: -200px; left: 30%; background: oklch(0.6 0.22 320); opacity: 0.2; }
+
     .container {
-      max-width: 800px;
+      max-width: 1200px;
       margin: 0 auto;
-      padding: 2rem;
-      flex: 1;
+      padding: 0 1.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      background: oklch(0.145 0.013 280 / 70%);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      text-decoration: none;
+      color: var(--foreground);
+    }
+    .nav-logo {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--gradient-hero);
+      display: flex;
+      align-items: center;
       justify-content: center;
+      box-shadow: var(--shadow-glow);
     }
-    .header {
+    .nav-logo svg { width: 18px; height: 18px; }
+    .nav-title {
+      font-weight: 600;
+      font-size: 1.0625rem;
+      letter-spacing: -0.01em;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .nav-link {
+      color: var(--foreground-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      padding: 0.5rem 0.875rem;
+      border-radius: var(--radius);
+      transition: color 0.2s, background 0.2s;
+    }
+    .nav-link:hover { color: var(--foreground); background: var(--muted); }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.125rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border-radius: var(--radius);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+    .btn-primary {
+      background: var(--foreground);
+      color: var(--background);
+      box-shadow: 0 1px 2px oklch(0 0 0 / 10%), 0 4px 12px -2px oklch(0 0 0 / 20%);
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 1px 2px oklch(0 0 0 / 10%), 0 8px 20px -4px oklch(0 0 0 / 30%);
+    }
+    .btn-secondary {
+      background: var(--muted);
+      color: var(--foreground);
+      border-color: var(--border-strong);
+    }
+    .btn-secondary:hover { background: oklch(0.3 0.02 280); }
+    .btn-hero {
+      padding: 0.875rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      background: var(--gradient-hero);
+      color: white;
+      box-shadow: var(--shadow-glow), 0 1px 2px oklch(0 0 0 / 20%);
+    }
+    .btn-hero:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 60px -8px oklch(0.65 0.22 280 / 50%), 0 8px 24px -4px oklch(0 0 0 / 30%);
+    }
+    .btn-ghost {
+      color: var(--foreground-muted);
+    }
+    .btn-ghost:hover { color: var(--foreground); background: var(--muted); }
+
+    /* Hero */
+    .hero {
+      padding: 7rem 0 5rem;
       text-align: center;
-      margin-bottom: 3rem;
+      position: relative;
     }
-    .logo {
-      font-size: 4rem;
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.375rem 0.875rem;
+      background: var(--muted);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      font-size: 0.8125rem;
+      color: var(--foreground-muted);
+      margin-bottom: 2rem;
+      animation: fadeIn 0.6s ease-out;
+    }
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: oklch(0.7 0.2 145);
+      box-shadow: 0 0 8px oklch(0.7 0.2 145 / 60%);
+    }
+    .badge strong { color: var(--foreground); font-weight: 600; }
+
+    .hero-title {
+      font-size: clamp(2.5rem, 6vw, 4.5rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
+      animation: fadeIn 0.6s 0.1s ease-out backwards;
+    }
+    .hero-title .gradient {
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: transparent;
+    }
+    .hero-subtitle {
+      font-size: clamp(1rem, 1.5vw, 1.25rem);
+      color: var(--foreground-muted);
+      max-width: 640px;
+      margin: 0 auto 2.5rem;
+      line-height: 1.6;
+      animation: fadeIn 0.6s 0.2s ease-out backwards;
+    }
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+      animation: fadeIn 0.6s 0.3s ease-out backwards;
+    }
+    .hero-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.8125rem;
+      color: var(--foreground-subtle);
+      margin-bottom: 4rem;
+      animation: fadeIn 0.6s 0.4s ease-out backwards;
+    }
+    .hero-meta-divider { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+
+    /* Product Preview */
+    .preview {
+      max-width: 960px;
+      margin: 0 auto;
+      position: relative;
+      animation: fadeIn 0.8s 0.5s ease-out backwards;
+    }
+    .preview-frame {
+      background: var(--background-muted);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card), 0 0 80px -20px oklch(0.65 0.22 280 / 30%);
+      position: relative;
+    }
+    .preview-frame::before {
+      content: "";
+      position: absolute;
+      inset: -1px;
+      border-radius: var(--radius-lg);
+      padding: 1px;
+      background: linear-gradient(135deg, oklch(1 0 0 / 12%), oklch(1 0 0 / 4%) 50%, oklch(1 0 0 / 8%));
+      mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      -webkit-mask-composite: xor;
+      pointer-events: none;
+    }
+    .preview-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      background: oklch(0.18 0.015 280);
+      border-bottom: 1px solid var(--border);
+    }
+    .preview-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .preview-dot.red { background: oklch(0.65 0.22 25); }
+    .preview-dot.yellow { background: oklch(0.78 0.17 80); }
+    .preview-dot.green { background: oklch(0.7 0.2 145); }
+    .preview-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.8125rem;
+      color: var(--foreground-subtle);
+      font-weight: 500;
+    }
+    .preview-screen {
+      aspect-ratio: 16 / 10;
+      background: linear-gradient(135deg, oklch(0.2 0.04 280) 0%, oklch(0.18 0.05 320) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .mock-selection {
+      position: absolute;
+      top: 18%;
+      left: 22%;
+      width: 56%;
+      height: 60%;
+      border: 1.5px solid oklch(0.75 0.18 240);
+      box-shadow: 0 0 0 9999px oklch(0 0 0 / 0.45);
+    }
+    .mock-toolbar {
+      position: absolute;
+      bottom: 12%;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem;
+      background: oklch(0.22 0.02 280);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      backdrop-filter: blur(8px);
+    }
+    .mock-tool {
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: var(--foreground-muted);
+      font-size: 0.875rem;
+    }
+    .mock-tool.active {
+      background: oklch(0.65 0.22 280);
+      color: white;
+    }
+    .mock-divider {
+      width: 1px;
+      height: 16px;
+      background: var(--border-strong);
+      margin: 0 0.25rem;
+    }
+    .mock-shape {
+      position: absolute;
+      border: 2px solid oklch(0.7 0.2 25);
+      border-radius: 4px;
+    }
+    .mock-shape-1 { top: 25%; left: 28%; width: 25%; height: 18%; }
+    .mock-shape-2 {
+      top: 30%; left: 58%;
+      width: 14%; height: 14%;
+      border: 2px solid oklch(0.7 0.2 145);
+      border-radius: 50%;
+    }
+    .mock-arrow {
+      position: absolute;
+      top: 55%; left: 35%;
+      width: 22%; height: 0;
+      border-top: 2px solid oklch(0.78 0.17 80);
+    }
+    .mock-arrow::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: -5px;
+      width: 0;
+      height: 0;
+      border-left: 8px solid oklch(0.78 0.17 80);
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+    }
+
+    /* Logo strip */
+    .logos {
+      padding: 5rem 0 3rem;
+      text-align: center;
+    }
+    .logos-label {
+      font-size: 0.8125rem;
+      color: var(--foreground-subtle);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+    }
+    .logos-strip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 3rem;
+      flex-wrap: wrap;
+      opacity: 0.5;
+    }
+    .logos-strip span {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--foreground-muted);
+      letter-spacing: -0.01em;
+    }
+
+    /* Section */
+    .section { padding: 6rem 0; }
+    .section-header {
+      max-width: 720px;
+      margin: 0 auto 4rem;
+      text-align: center;
+    }
+    .section-eyebrow {
+      display: inline-block;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
       margin-bottom: 1rem;
     }
-    h1 {
-      font-size: 2.5rem;
+    .section-title {
+      font-size: clamp(1.875rem, 3.5vw, 2.75rem);
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      margin-bottom: 1rem;
     }
-    .subtitle {
-      color: #a0aec0;
-      font-size: 1.1rem;
+    .section-description {
+      font-size: 1.0625rem;
+      color: var(--foreground-muted);
+      line-height: 1.6;
     }
+
+    /* Features */
     .features {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 3rem;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
     }
     .feature {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 1.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .feature-icon { font-size: 2rem; margin-bottom: 0.75rem; }
-    .feature h3 { font-size: 1.1rem; margin-bottom: 0.5rem; }
-    .feature p { color: #a0aec0; font-size: 0.9rem; line-height: 1.5; }
-    .download {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    .download-btn {
-      display: inline-block;
-      padding: 1rem 2.5rem;
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #fff;
-      background: linear-gradient(135deg, #4299e1 0%, #3182ce 100%);
-      border-radius: 50px;
-      text-decoration: none;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .download-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 30px rgba(66, 153, 225, 0.4);
-    }
-    .version { color: #718096; margin-top: 0.5rem; font-size: 0.9rem; }
-    .footer {
-      text-align: center;
+      position: relative;
       padding: 2rem;
-      color: #718096;
-      font-size: 0.9rem;
+      background: var(--gradient-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      transition: border-color 0.2s, transform 0.2s;
+      overflow: hidden;
     }
-    .footer a { color: #4299e1; text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
-    @media (max-width: 600px) {
-      h1 { font-size: 2rem; }
-      .features { grid-template-columns: 1fr; }
+    .feature:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+    .feature::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, oklch(1 0 0 / 12%), transparent);
+    }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      background: oklch(0.65 0.22 280 / 12%);
+      border: 1px solid oklch(0.65 0.22 280 / 24%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      margin-bottom: 1.25rem;
+    }
+    .feature-icon svg { width: 22px; height: 22px; }
+    .feature-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+    .feature-description {
+      color: var(--foreground-muted);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* Workflow */
+    .workflow {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      position: relative;
+    }
+    .step {
+      position: relative;
+      padding: 2rem;
+      background: var(--background-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: var(--gradient-hero);
+      color: white;
+      font-weight: 700;
+      font-size: 0.875rem;
+      margin-bottom: 1.25rem;
+      box-shadow: var(--shadow-glow);
+    }
+    .step-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      margin-bottom: 0.5rem;
+    }
+    .step-description {
+      color: var(--foreground-muted);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1rem;
+      margin: 4rem 0;
+    }
+    .stat {
+      padding: 1.5rem;
+      background: var(--gradient-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      background: var(--gradient-text);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      font-size: 0.8125rem;
+      color: var(--foreground-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Tools showcase */
+    .tools {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+    }
+    .tool-card {
+      padding: 1.25rem;
+      background: var(--background-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+      transition: all 0.2s;
+    }
+    .tool-card:hover {
+      border-color: var(--border-strong);
+      background: var(--background-muted);
+    }
+    .tool-card-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: oklch(0.27 0.02 280);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--foreground);
+    }
+    .tool-card-name {
+      font-size: 0.9375rem;
+      font-weight: 600;
+    }
+    .tool-card-desc {
+      font-size: 0.8125rem;
+      color: var(--foreground-muted);
+      line-height: 1.5;
+    }
+
+    /* CTA */
+    .cta {
+      margin: 4rem 0 6rem;
+      padding: 4rem 3rem;
+      background: var(--gradient-card);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 600px;
+      background: var(--gradient-hero);
+      opacity: 0.15;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .cta-content { position: relative; z-index: 1; }
+    .cta-title {
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+    }
+    .cta-description {
+      color: var(--foreground-muted);
+      font-size: 1.0625rem;
+      margin-bottom: 2rem;
+      max-width: 480px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 3rem 0 4rem;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.5rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .footer-link {
+      color: var(--foreground-muted);
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: color 0.2s;
+    }
+    .footer-link:hover { color: var(--foreground); }
+    .footer-meta {
+      color: var(--foreground-subtle);
+      font-size: 0.8125rem;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
+    }
+    .preview-screen { animation: float 6s ease-in-out infinite; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .nav-links .nav-link { display: none; }
+      .hero { padding: 4rem 0 3rem; }
+      .section { padding: 4rem 0; }
+      .workflow { grid-template-columns: 1fr; }
+      .tools { grid-template-columns: repeat(2, 1fr); }
+      .cta { padding: 3rem 1.5rem; }
+      .hero-meta { flex-direction: column; gap: 0.5rem; }
+      .hero-meta-divider { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <div class="logo">📸</div>
-      <h1>SnapAI</h1>
-      <p class="subtitle">智能截图工具 - 支持 AI 识图与多语言翻译</p>
-    </header>
-    
-    <div class="features">
-      <div class="feature">
-        <div class="feature-icon">🎯</div>
-        <h3>快捷截图</h3>
-        <p>Ctrl+Shift+A 一键截图，支持多显示器和选区拖拽</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🤖</div>
-        <h3>AI 智能识图</h3>
-        <p>截图表述、内容提取、代码识别，轻松搞定</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🌐</div>
-        <h3>多语言翻译</h3>
-        <p>OCR + 翻译一体化，支持中英日韩法德西等语言</p>
-      </div>
-      <div class="feature">
-        <div class="feature-icon">🔒</div>
-        <h3>安全隐私</h3>
-        <p>API Key 加密存储，不收集数据，不发送遥测</p>
-      </div>
-    </div>
-    
-    <div class="download">
-      <a href="https://github.com/stohox/snapai/releases/latest/download/SnapAI-portable.exe" class="download-btn" id="download-btn">
-        下载 Windows 便携版
+  <div class="grid-bg" aria-hidden="true"></div>
+  <div class="glow glow-1" aria-hidden="true"></div>
+  <div class="glow glow-2" aria-hidden="true"></div>
+  <div class="glow glow-3" aria-hidden="true"></div>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="nav-brand">
+        <span class="nav-logo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="color: white;">
+            <path d="M6 10L6 6L10 6"/>
+            <path d="M14 6L18 6L18 10"/>
+            <path d="M18 14L18 18L14 18"/>
+            <path d="M10 18L6 18L6 14"/>
+            <path d="M20 2.5L20.5 4L22 4.5L20.5 5L20 6.5L19.5 5L18 4.5L19.5 4Z" fill="#fbbf24" stroke="none"/>
+          </svg>
+        </span>
+        <span class="nav-title">SnapAI</span>
       </a>
-      <p class="version" id="version">v1.0.0</p>
+      <div class="nav-links">
+        <a href="#features" class="nav-link">功能</a>
+        <a href="#workflow" class="nav-link">使用流程</a>
+        <a href="https://github.com/stohox/snapai" class="nav-link" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/stohox/snapai/releases/latest/download/SnapAI-portable.exe" class="btn btn-primary" id="nav-download-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          下载
+        </a>
+      </div>
     </div>
-  </div>
-  
+  </nav>
+
+  <main class="container">
+    <section class="hero">
+      <span class="badge">
+        <span class="badge-dot"></span>
+        <strong>v1.0.0</strong> · 已发布 · 稳定版
+      </span>
+      <h1 class="hero-title">
+        截图，<span class="gradient">更聪明</span>一点
+      </h1>
+      <p class="hero-subtitle">
+        基于 AI 的智能截图工具，从选区、标注到识图、翻译，一气呵成。<br>
+        键盘一按，效率翻倍。
+      </p>
+      <div class="hero-actions">
+        <a href="https://github.com/stohox/snapai/releases/latest/download/SnapAI-portable.exe" class="btn btn-hero" id="hero-download-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="hero-btn-text">免费下载 Windows 版</span>
+        </a>
+        <a href="https://github.com/stohox/snapai" class="btn btn-secondary" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24" fill="currentColor" style="width: 16px; height: 16px;">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          查看源码
+        </a>
+      </div>
+      <div class="hero-meta">
+        <span>Windows 10 / 11</span>
+        <span class="hero-meta-divider"></span>
+        <span>便携版 · 无需安装</span>
+        <span class="hero-meta-divider"></span>
+        <span>MIT 开源</span>
+      </div>
+
+      <div class="preview" id="preview">
+        <div class="preview-frame">
+          <div class="preview-titlebar">
+            <span class="preview-dot red"></span>
+            <span class="preview-dot yellow"></span>
+            <span class="preview-dot green"></span>
+            <span class="preview-title">SnapAI · 截图编辑器</span>
+            <span style="width: 52px;"></span>
+          </div>
+          <div class="preview-screen">
+            <div class="mock-selection"></div>
+            <div class="mock-shape mock-shape-1"></div>
+            <div class="mock-shape mock-shape-2"></div>
+            <div class="mock-arrow"></div>
+            <div class="mock-toolbar">
+              <span class="mock-tool">▭</span>
+              <span class="mock-tool">◯</span>
+              <span class="mock-tool active">→</span>
+              <span class="mock-tool">✎</span>
+              <span class="mock-tool">①</span>
+              <span class="mock-tool">T</span>
+              <div class="mock-divider"></div>
+              <span class="mock-tool">📋</span>
+              <span class="mock-tool">💾</span>
+              <span class="mock-tool">📌</span>
+              <div class="mock-divider"></div>
+              <span class="mock-tool">🤖</span>
+              <span class="mock-tool">🌐</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="logos">
+      <p class="logos-label">基于 OpenAI Vision 模型驱动</p>
+      <div class="logos-strip">
+        <span>GPT-4o</span>
+        <span>Claude</span>
+        <span>Gemini</span>
+        <span>DeepSeek</span>
+        <span>通义千问</span>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="section-header">
+        <span class="section-eyebrow">核心功能</span>
+        <h2 class="section-title">从截图到交付，一站完成</h2>
+        <p class="section-description">
+          不只是一个截图工具，更是你的视觉生产力助手。
+        </p>
+      </div>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">极速截图</h3>
+          <p class="feature-description">Ctrl+Shift+A 一键唤起，多显示器无缝支持，选区拖拽流畅跟手。</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+              <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+              <path d="M2 2l7.586 7.586"/>
+              <circle cx="11" cy="11" r="2"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">丰富标注</h3>
+          <p class="feature-description">矩形、椭圆、箭头、画笔、序号、文字、马赛克 — 表达想法，从未如此直观。</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a10 10 0 1 0 10 10"/>
+              <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">AI 识图</h3>
+          <p class="feature-description">截图即分析 — 内容描述、代码提取、公式识别，AI 帮你读懂每一张图。</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 8l6 6"/>
+              <path d="M4 14l6-6 2-3"/>
+              <path d="M2 5h12"/>
+              <path d="M7 2h1"/>
+              <path d="M22 22l-5-10-5 10"/>
+              <path d="M14 18h6"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">OCR 翻译</h3>
+          <p class="feature-description">截取任意界面文字，秒级翻译为中英日韩法德西俄等八国语言。</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">钉在桌面</h3>
+          <p class="feature-description">截图置顶悬浮，缩放自如。参考资料、对照截图，桌面上永远在线。</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <h3 class="feature-title">隐私优先</h3>
+          <p class="feature-description">API Key 本地加密存储，不上传截图，不发送遥测，关闭即清空。</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="tools">
+      <div class="section-header">
+        <span class="section-eyebrow">标注工具</span>
+        <h2 class="section-title">专业标注，像设计师一样表达</h2>
+        <p class="section-description">
+          8 种内置工具，覆盖从简单框选到精细批注的全部场景。
+        </p>
+      </div>
+
+      <div class="tools">
+        <div class="tool-card">
+          <div class="tool-card-icon">▭</div>
+          <div class="tool-card-name">矩形</div>
+          <div class="tool-card-desc">框选重点区域</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">◯</div>
+          <div class="tool-card-name">椭圆</div>
+          <div class="tool-card-desc">柔和高亮显示</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">→</div>
+          <div class="tool-card-name">箭头</div>
+          <div class="tool-card-desc">指向关键信息</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">✎</div>
+          <div class="tool-card-name">画笔</div>
+          <div class="tool-card-desc">自由涂鸦批注</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">①</div>
+          <div class="tool-card-name">序号</div>
+          <div class="tool-card-desc">步骤编号标注</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">T</div>
+          <div class="tool-card-name">文字</div>
+          <div class="tool-card-desc">添加文本注释</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">▦</div>
+          <div class="tool-card-name">马赛克</div>
+          <div class="tool-card-desc">隐藏敏感信息</div>
+        </div>
+        <div class="tool-card">
+          <div class="tool-card-icon">⊹</div>
+          <div class="tool-card-name">选择</div>
+          <div class="tool-card-desc">调整标注对象</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="section-header">
+        <span class="section-eyebrow">使用流程</span>
+        <h2 class="section-title">三步搞定，告别繁琐</h2>
+        <p class="section-description">
+          从选区到输出，最自然的操作流程。
+        </p>
+      </div>
+
+      <div class="workflow">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3 class="step-title">唤起截图</h3>
+          <p class="step-description">按下 Ctrl+Shift+A（可自定义），全屏覆盖层即刻出现。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3 class="step-title">选区与标注</h3>
+          <p class="step-description">拖拽选区，使用工具栏添加标注，AI 一键识图或翻译。</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3 class="step-title">一键交付</h3>
+          <p class="step-description">复制到剪贴板、保存为图片、钉在桌面，或直接发送给 AI。</p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">&lt; 100ms</div>
+          <div class="stat-label">截图响应</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">8 种</div>
+          <div class="stat-label">标注工具</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">8 国</div>
+          <div class="stat-label">翻译语言</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">100%</div>
+          <div class="stat-label">本地运行</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="cta-content">
+        <h2 class="cta-title">准备好升级你的截图体验了吗？</h2>
+        <p class="cta-description">
+          免费下载，无广告无追踪，开箱即用。
+        </p>
+        <a href="https://github.com/stohox/snapai/releases/latest/download/SnapAI-portable.exe" class="btn btn-hero" id="cta-download-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px;">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span id="cta-btn-text">下载 SnapAI</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
   <footer class="footer">
-    <p>
-      <a href="https://github.com/stohox/snapai">GitHub</a> · 
-      MIT License · 
-      Made with ❤️
-    </p>
+    <div class="container">
+      <div class="footer-links">
+        <a href="https://github.com/stohox/snapai" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/stohox/snapai/releases" class="footer-link" target="_blank" rel="noopener">更新日志</a>
+        <a href="https://github.com/stohox/snapai/issues" class="footer-link" target="_blank" rel="noopener">反馈问题</a>
+        <a href="https://github.com/stohox/snapai/blob/main/LICENSE" class="footer-link" target="_blank" rel="noopener">MIT 许可</a>
+      </div>
+      <p class="footer-meta">© 2026 SnapAI · 让截图更聪明</p>
+    </div>
   </footer>
 
   <script>
-    async function getLatestRelease() {
+    (async function getLatestRelease() {
+      const repo = 'stohox/snapai'
+      const fallback = {
+        tag: 'v1.0.0',
+        url: 'https://github.com/stohox/snapai/releases/latest/download/SnapAI-portable.exe'
+      }
       try {
-        const response = await fetch('https://api.github.com/repos/stohox/snapai/releases/latest');
-        const data = await response.json();
-        const exeAsset = data.assets?.find(a => a.name.endsWith('.exe'));
-        if (exeAsset) {
-          document.getElementById('download-btn').href = exeAsset.browser_download_url;
-          document.getElementById('version').textContent = 'v' + data.tag_name.replace('v', '');
+        const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+          headers: { 'Accept': 'application/vnd.github+json' }
+        })
+        if (!res.ok) throw new Error('release fetch failed')
+        const data = await res.json()
+        const exeAsset = (data.assets || []).find(a => /\.exe$/i.test(a.name || ''))
+        if (exeAsset && data.tag_name) {
+          const url = exeAsset.browser_download_url
+          const tag = data.tag_name
+          document.getElementById('hero-download-btn').href = url
+          document.getElementById('nav-download-btn').href = url
+          document.getElementById('cta-download-btn').href = url
+          const heroText = document.getElementById('hero-btn-text')
+          if (heroText) heroText.textContent = `免费下载 ${tag.replace(/^v/, '')} 版`
+          const ctaText = document.getElementById('cta-btn-text')
+          if (ctaText) ctaText.textContent = `下载 ${tag.replace(/^v/, '')}`
         }
       } catch (e) {
-        console.log('Could not fetch latest release');
+        // keep fallback values
       }
-    }
-    getLatestRelease();
+    })()
   </script>
 </body>
 </html>
